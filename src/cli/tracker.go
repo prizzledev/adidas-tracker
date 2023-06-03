@@ -30,6 +30,17 @@ type SubmitStuct struct {
 	Id string `json:"id"`
 }
 
+type Shipment struct {
+	ShipmentNo           string `json:"shipmentNo"`
+	TrackingURL          string `json:"trackingUrl"`
+	TrackingNo           string `json:"trackingNo"`
+	CarrierCode          string `json:"carrierCode"`
+	SCAC                 string `json:"SCAC"`
+	ShipmentDate         string `json:"shipmentDate"`
+	ExpectedDeliveryDate string `json:"expectedDeliveryDate"`
+	Status               string `json:"status"`
+}
+
 type TrackingResponse struct {
 	AdjustedMerchandizeTotal int    `json:"adjustedMerchandizeTotal"`
 	MerchandizeTotal         int    `json:"merchandizeTotal"`
@@ -94,16 +105,7 @@ type TrackingResponse struct {
 		IsBonusProduct      bool        `json:"isBonusProduct"`
 		PriceAdjustments    interface{} `json:"priceAdjustments"`
 	} `json:"productLineItems"`
-	Shipments []struct {
-		ShipmentNo           string `json:"shipmentNo"`
-		TrackingURL          string `json:"trackingUrl"`
-		TrackingNo           string `json:"trackingNo"`
-		CarrierCode          string `json:"carrierCode"`
-		SCAC                 string `json:"SCAC"`
-		ShipmentDate         string `json:"shipmentDate"`
-		ExpectedDeliveryDate string `json:"expectedDeliveryDate"`
-		Status               string `json:"status"`
-	} `json:"shipments"`
+	Shipments      []Shipment `json:"shipments"`
 	PaymentMethods []struct {
 		PaymentType string `json:"paymentType"`
 	} `json:"paymentMethods"`
@@ -437,6 +439,10 @@ func (t *Tracker) getTrackingData() error {
 	if err != nil {
 		logger.Error("Adidas-Tracker", "Error unmarshalling tracking data response body: "+err.Error())
 		return errors.New("Error unmarshalling tracking data response body: " + err.Error())
+	}
+
+	if len(trackingData.Shipments) == 0 {
+		trackingData.Shipments = append(trackingData.Shipments, Shipment{})
 	}
 
 	t.Result = trackingData
