@@ -5,7 +5,7 @@
 Adidas-Tracker is a tool that allows you to track your adidas orders and summarise them in a single csv file.
 
 ## How to use Adidas-Tracker?
-1. Download the latest release from [here]()
+1. Download the latest release from [here](https://github.com/Prizzledizle/adidas-tracker/releases/)
 2. Extract the zip file
 3. Fill in the `order.csv` and `proxies.txt` files
 4. run the `main` file
