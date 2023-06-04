@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
+	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	http "github.com/bogdanfinn/fhttp"
 	tls "github.com/bogdanfinn/tls-client"
@@ -17,13 +21,15 @@ type Tracker struct {
 	OrderId string
 	Email   string
 	Proxy   string
+	Invoice string
 
 	client     tls.HttpClient
 	trackingId string
 	region     string
 
-	Result TrackingResponse
-	Error  error
+	Result      TrackingResponse
+	InvoiceList []InvoiceListResponse
+	Error       error
 }
 
 type SubmitStuct struct {
@@ -168,6 +174,15 @@ type TrackingResponse struct {
 	InvoiceListID   string `json:"invoiceListId"`
 }
 
+type InvoiceListResponse struct {
+	ID         string `json:"id"`
+	Type       string `json:"type"`
+	InvoicedOn string `json:"invoicedOn"`
+	OrderNo    string `json:"orderNo"`
+	Key        string `json:"key"`
+	Amount     int    `json:"amount"`
+}
+
 func (t *Tracker) Track() {
 	logger.Info("Adidas-Tracker", "Tracking order "+t.OrderId+" for "+t.Email)
 
@@ -226,6 +241,35 @@ func (t *Tracker) Track() {
 	}
 
 	logger.Success("Adidas-Tracker", "Tracking data retrieved")
+
+	if t.Result.Status == "COMPLETED" || t.Result.Status == "DELIVERED" && strings.ToLower(t.Invoice) == "true" {
+		logger.Info("Adidas-Tracker", "Getting invoice list")
+
+		err = t.getInvoiceList()
+		if err != nil {
+			t.Error = err
+			return
+		}
+
+		logger.Info("Adidas-Tracker", "Invoice list retrieved")
+
+		for i, invoice := range t.InvoiceList {
+			logger.Info("Adidas-Tracker", "Getting invoice "+invoice.ID)
+
+			err = t.getInvoice(invoice.ID, i)
+			if err != nil {
+				t.Error = err
+				return
+			}
+
+			logger.Success("Adidas-Tracker", "Invoice "+invoice.OrderNo+" saved")
+		}
+
+		logger.Success("Adidas-Tracker", "Invoices retrieved")
+	} else {
+		logger.Warning("Adidas-Tracker", "Invcoice list not available")
+	}
+
 	return
 }
 
@@ -446,6 +490,149 @@ func (t *Tracker) getTrackingData() error {
 	}
 
 	t.Result = trackingData
+
+	return nil
+}
+
+func (t *Tracker) getInvoiceList() error {
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.adidas.%s/api/orders/invoice/list/%s", t.region, url.QueryEscape(t.Result.InvoiceListID)), nil)
+	if err != nil {
+		logger.Error("Adidas-Tracker", "Error creating getInvoiceList request: "+err.Error())
+	}
+
+	req.Header = http.Header{
+		"content-type": []string{"application/json"},
+		//"x-timestamp":     []string{"1685909215348"},
+		"x-timestamp":     []string{strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond), 10)},
+		"accept":          []string{"*/*"},
+		"x-instana-l":     []string{"1,correlationType=web;correlationId=7b55e312cb11596c"},
+		"sec-fetch-site":  []string{"same-origin"},
+		"accept-language": []string{"en-GB,en;q=0.9"},
+		"accept-encoding": []string{"gzip, deflate, br"},
+		"sec-fetch-mode":  []string{"cors"},
+		"user-agent":      []string{"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"},
+		"x-instana-s":     []string{"7b55e312cb11596c"},
+		"referer":         []string{"https://www.adidas.de/order-details?data=" + url.QueryEscape(t.trackingId)},
+		"x-instana-t":     []string{"7b55e312cb11596c"},
+		"sec-fetch-dest":  []string{"empty"},
+
+		http.HeaderOrderKey: []string{
+			"content-type",
+			"x-timestamp",
+			"accept",
+			"x-instana-l",
+			"sec-fetch-site",
+			"accept-language",
+			"accept-encoding",
+			"sec-fetch-mode",
+			"user-agent",
+			"x-instana-s",
+			"referer",
+			"x-instana-t",
+			"sec-fetch-dest",
+		},
+	}
+
+	resp, err := t.client.Do(req)
+	if err != nil {
+		logger.Error("Adidas-Tracker", "Error getting invoice list: "+err.Error())
+		return errors.New("Error getting invoice list: " + err.Error())
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusBadRequest {
+			logger.Info("Adidas-Tracker", "No invoice list found, adidas is weird :/")
+			return errors.New("Error getting invoice list:  adidas is weird :/")
+		} else {
+			logger.Error("Adidas-Tracker", "Error getting invoice list: "+resp.Status)
+			return errors.New("Error getting invoice list: " + resp.Status)
+		}
+	}
+
+	var invoiceList []InvoiceListResponse
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("Adidas-Tracker", "Error reading invoice list response body: "+err.Error())
+		return errors.New("Error reading invoice list response body: " + err.Error())
+	}
+
+	err = json.Unmarshal(body, &invoiceList)
+	if err != nil {
+		logger.Error("Adidas-Tracker", "Error unmarshalling invoice list response body: "+err.Error())
+		return errors.New("Error unmarshalling invoice list response body: " + err.Error())
+	}
+
+	t.InvoiceList = invoiceList
+
+	return nil
+}
+
+func (t *Tracker) getInvoice(invoiceId string, i int) error {
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.adidas.%s/api/orders/invoice/%s", t.region, url.QueryEscape(invoiceId)), nil)
+	if err != nil {
+		logger.Error("Adidas-Tracker", "Error creating getInvoice request: "+err.Error())
+	}
+
+	req.Header = http.Header{
+		"accept":          []string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
+		"sec-fetch-site":  []string{"none"},
+		"accept-encoding": []string{"gzip, deflate, br"},
+		"sec-fetch-mode":  []string{"navigate"},
+		"user-agent":      []string{"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"},
+		"accept-language": []string{"en-GB,en;q=0.9"},
+		"sec-fetch-dest":  []string{"document"},
+
+		http.HeaderOrderKey: []string{
+			"accept",
+			"sec-fetch-site",
+			"cookie",
+			"accept-encoding",
+			"sec-fetch-mode",
+			"user-agent",
+			"accept-language",
+			"sec-fetch-dest",
+		},
+	}
+
+	resp, err := t.client.Do(req)
+	if err != nil {
+		logger.Error("Adidas-Tracker", "Error getting invoice: "+err.Error())
+		return errors.New("Error getting invoice: " + err.Error())
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Error("Adidas-Tracker", "Error getting invoice: "+resp.Status)
+		return errors.New("Error getting invoice: " + resp.Status)
+	}
+
+	dir := "invoices"
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			logger.Error("Adidas-Tracker", "Error creating directory: "+err.Error())
+			return errors.New("Error creating directory: " + err.Error())
+		}
+	}
+
+	file, err := os.Create(fmt.Sprintf("%s/%s-(%d).pdf", dir, t.OrderId, i))
+	if err != nil {
+		logger.Error("Adidas-Tracker", "Error creating file: "+err.Error())
+		return errors.New("Error creating file: " + err.Error())
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		logger.Error("Adidas-Tracker", "Error saving invoice: "+err.Error())
+		return errors.New("Error saving invoice: " + err.Error())
+	}
 
 	return nil
 }

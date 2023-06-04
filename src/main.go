@@ -22,6 +22,7 @@ import (
 type Order struct {
 	OrderNumber string
 	Email       string
+	Invoice     string
 }
 
 type Tracked struct {
@@ -87,6 +88,7 @@ func main() {
 		orders = append(orders, Order{
 			OrderNumber: line[0],
 			Email:       line[1],
+			Invoice:     line[2],
 		})
 	}
 
@@ -105,6 +107,7 @@ func main() {
 			OrderId: order.OrderNumber,
 			Email:   order.Email,
 			Proxy:   proxy,
+			Invoice: order.Invoice,
 		}
 
 		tracker.Track()
@@ -156,5 +159,5 @@ func main() {
 		}
 	}
 
-	logger.Info("CREDIT", "Made with ❤️ by @prizzle")
+	logger.Info("CREDIT", "Made with ❤️  by @prizzle")
 }
