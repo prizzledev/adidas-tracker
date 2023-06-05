@@ -246,7 +246,7 @@ func (t *Tracker) Track() {
 
 	logger.Success(t.Email, "Tracking data retrieved")
 
-	if t.Result.Status == "COMPLETED" || t.Result.Status == "DELIVERED" && strings.ToLower(t.Invoice) == "true" {
+	if strings.ToLower(t.Invoice) == "true" {
 		logger.Info(t.Email, "Getting invoice list")
 
 		err, skip := t.getInvoiceList()
