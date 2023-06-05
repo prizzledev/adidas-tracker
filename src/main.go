@@ -54,6 +54,8 @@ func main() {
 		return
 	}
 
+	proxiesTxt = []byte(strings.ReplaceAll(string(proxiesTxt), "\r", ""))
+
 	//split after each line
 	proxies := strings.Split(string(proxiesTxt), "\n")
 	if len(proxies) == 0 {
@@ -160,4 +162,7 @@ func main() {
 	}
 
 	logger.Info("CREDIT", "Made with ❤️  by @prizzle")
+
+	logger.Info("SYSTEM", "Press any key to exit...")
+	fmt.Scanln()
 }

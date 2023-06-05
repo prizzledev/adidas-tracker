@@ -184,7 +184,7 @@ type InvoiceListResponse struct {
 }
 
 func (t *Tracker) Track() {
-	logger.Info("Adidas-Tracker", "Tracking order "+t.OrderId+" for "+t.Email)
+	logger.Info(t.Email, "Tracking order "+t.OrderId+" for "+t.Email)
 
 	//parse the region from the order id (2nd and 3rd characters)
 	t.region = strings.ToLower(t.OrderId[1:3])
@@ -201,14 +201,14 @@ func (t *Tracker) Track() {
 	}
 
 	if t.Proxy != "" {
-		logger.Info("Adidas-Tracker", "Using proxy "+t.Proxy)
+		logger.Info(t.Email, "Using proxy "+t.Proxy)
 		proxyParts := strings.Split(t.Proxy, ":")
 		options = append(options, tls.WithProxyUrl(fmt.Sprintf("http://%s:%s@%s:%s", proxyParts[2], proxyParts[3], proxyParts[0], proxyParts[1])))
 	}
 
 	client, err := tls.NewHttpClient(nil, options...)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error creating client: "+err.Error())
+		logger.Error(t.Email, "Error creating client: "+err.Error())
 		t.Error = err
 		return
 	}
@@ -224,7 +224,7 @@ func (t *Tracker) Track() {
 		return
 	}
 
-	logger.Info("Adidas-Tracker", "Got tracking page")
+	logger.Info(t.Email, "Got tracking page")
 
 	// Submit orderid and email
 
@@ -234,7 +234,7 @@ func (t *Tracker) Track() {
 		return
 	}
 
-	logger.Info("Adidas-Tracker", "TrackingId retrieved")
+	logger.Info(t.Email, "TrackingId retrieved")
 
 	// Get tracking data
 
@@ -244,10 +244,10 @@ func (t *Tracker) Track() {
 		return
 	}
 
-	logger.Success("Adidas-Tracker", "Tracking data retrieved")
+	logger.Success(t.Email, "Tracking data retrieved")
 
 	if t.Result.Status == "COMPLETED" || t.Result.Status == "DELIVERED" && strings.ToLower(t.Invoice) == "true" {
-		logger.Info("Adidas-Tracker", "Getting invoice list")
+		logger.Info(t.Email, "Getting invoice list")
 
 		err, skip := t.getInvoiceList()
 		if skip {
@@ -258,10 +258,10 @@ func (t *Tracker) Track() {
 			return
 		}
 
-		logger.Info("Adidas-Tracker", "Invoice list retrieved")
+		logger.Info(t.Email, "Invoice list retrieved")
 
 		for i, invoice := range t.InvoiceList {
-			logger.Info("Adidas-Tracker", "Getting invoice "+invoice.ID)
+			logger.Info(t.Email, "Getting invoice "+invoice.ID)
 
 			err = t.getInvoice(invoice.ID, i)
 			if err != nil {
@@ -269,12 +269,12 @@ func (t *Tracker) Track() {
 				return
 			}
 
-			logger.Success("Adidas-Tracker", "Invoice "+invoice.OrderNo+" saved")
+			logger.Success(t.Email, "Invoice "+invoice.OrderNo+" saved")
 		}
 
-		logger.Success("Adidas-Tracker", "Invoices retrieved")
+		logger.Success(t.Email, "Invoices retrieved")
 	} else {
-		logger.Warning("Adidas-Tracker", "Invcoice list not available")
+		logger.Warning(t.Email, "Invcoice list not available")
 	}
 
 	return
@@ -283,7 +283,7 @@ func (t *Tracker) Track() {
 func (t *Tracker) getTrackingPage() error {
 	homeReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.adidas.%s/", t.region), nil)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error creating request: "+err.Error())
+		logger.Error(t.Email, "Error creating request: "+err.Error())
 		return nil
 	}
 
@@ -319,12 +319,12 @@ func (t *Tracker) getTrackingPage() error {
 
 	homeResp, err := t.client.Do(homeReq)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error getting tracking page: "+err.Error())
+		logger.Error(t.Email, "Error getting tracking page: "+err.Error())
 		return errors.New("Error getting tracking page: " + err.Error())
 	}
 
 	if homeResp.StatusCode != http.StatusOK {
-		logger.Error("Adidas-Tracker", "Error getting tracking page: "+homeResp.Status)
+		logger.Error(t.Email, "Error getting tracking page: "+homeResp.Status)
 		return errors.New("Error getting tracking page: " + homeResp.Status)
 	}
 
@@ -341,13 +341,13 @@ func (t *Tracker) submitTracking() error {
 
 	submitorderPayload, err := json.Marshal(submitorderBody)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error marshalling submitorder payload: "+err.Error())
+		logger.Error(t.Email, "Error marshalling submitorder payload: "+err.Error())
 		return errors.New("Error marshalling submitorder payload: " + err.Error())
 	}
 
 	submitOrderReq, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://www.adidas.%s/api/orders/search", t.region), strings.NewReader(string(submitorderPayload)))
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error creating submitorder request: "+err.Error())
+		logger.Error(t.Email, "Error creating submitorder request: "+err.Error())
 		return errors.New("Error creating submitorder request: " + err.Error())
 	}
 
@@ -392,14 +392,14 @@ func (t *Tracker) submitTracking() error {
 
 	submitOrderResp, err := t.client.Do(submitOrderReq)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error submitting orderId: "+err.Error())
+		logger.Error(t.Email, "Error submitting orderId: "+err.Error())
 		return errors.New("Error submitting orderId: " + err.Error())
 	}
 
 	defer submitOrderResp.Body.Close()
 
 	if submitOrderResp.StatusCode != http.StatusOK {
-		logger.Error("Adidas-Tracker", "Error submitting orderId: "+submitOrderResp.Status)
+		logger.Error(t.Email, "Error submitting orderId: "+submitOrderResp.Status)
 		return errors.New("Error submitting orderId: " + submitOrderResp.Status)
 	}
 
@@ -407,13 +407,13 @@ func (t *Tracker) submitTracking() error {
 
 	submitOrderBody, err := ioutil.ReadAll(submitOrderResp.Body)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error reading submitorder response body: "+err.Error())
+		logger.Error(t.Email, "Error reading submitorder response body: "+err.Error())
 		return errors.New("Error reading submitorder response body: " + err.Error())
 	}
 
 	err = json.Unmarshal(submitOrderBody, &submitOrderRespBody)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error unmarshalling submitorder response body: "+err.Error())
+		logger.Error(t.Email, "Error unmarshalling submitorder response body: "+err.Error())
 		return errors.New("Error unmarshalling submitorder response body: " + err.Error())
 	}
 
@@ -425,7 +425,7 @@ func (t *Tracker) submitTracking() error {
 func (t *Tracker) getTrackingData() error {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.adidas.%s/api/orders/%s", t.region, url.QueryEscape(t.trackingId)), nil)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error creating getTrackingData request: "+err.Error())
+		logger.Error(t.Email, "Error creating getTrackingData request: "+err.Error())
 		return errors.New("Error creating getTrackingData request: " + err.Error())
 	}
 
@@ -467,14 +467,14 @@ func (t *Tracker) getTrackingData() error {
 
 	resp, err := t.client.Do(req)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error getting tracking data: "+err.Error())
+		logger.Error(t.Email, "Error getting tracking data: "+err.Error())
 		return errors.New("Error getting tracking data: " + err.Error())
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Error("Adidas-Tracker", "Error getting tracking data: "+resp.Status)
+		logger.Error(t.Email, "Error getting tracking data: "+resp.Status)
 		return errors.New("Error getting tracking data: " + resp.Status)
 	}
 
@@ -482,13 +482,13 @@ func (t *Tracker) getTrackingData() error {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error reading tracking data response body: "+err.Error())
+		logger.Error(t.Email, "Error reading tracking data response body: "+err.Error())
 		return errors.New("Error reading tracking data response body: " + err.Error())
 	}
 
 	err = json.Unmarshal(body, &trackingData)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error unmarshalling tracking data response body: "+err.Error())
+		logger.Error(t.Email, "Error unmarshalling tracking data response body: "+err.Error())
 		return errors.New("Error unmarshalling tracking data response body: " + err.Error())
 	}
 
@@ -505,7 +505,7 @@ func (t *Tracker) getInvoiceList() (error, bool) {
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.adidas.%s/api/orders/invoice/list/%s", t.region, url.QueryEscape(t.Result.InvoiceListID)), nil)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error creating getInvoiceList request: "+err.Error())
+		logger.Error(t.Email, "Error creating getInvoiceList request: "+err.Error())
 	}
 
 	req.Header = http.Header{
@@ -543,7 +543,7 @@ func (t *Tracker) getInvoiceList() (error, bool) {
 
 	resp, err := t.client.Do(req)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error getting invoice list: "+err.Error())
+		logger.Error(t.Email, "Error getting invoice list: "+err.Error())
 		return errors.New("Error getting invoice list: " + err.Error()), true
 	}
 
@@ -551,10 +551,10 @@ func (t *Tracker) getInvoiceList() (error, bool) {
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusBadRequest {
-			logger.Info("Adidas-Tracker", "No invoice list found, adidas is weird :/")
+			logger.Info(t.Email, "No invoice list found, adidas is weird :/")
 			return nil, true
 		} else {
-			logger.Error("Adidas-Tracker", "Error getting invoice list: "+resp.Status)
+			logger.Error(t.Email, "Error getting invoice list: "+resp.Status)
 			return errors.New("Error getting invoice list: " + resp.Status), true
 		}
 	}
@@ -563,13 +563,13 @@ func (t *Tracker) getInvoiceList() (error, bool) {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error reading invoice list response body: "+err.Error())
+		logger.Error(t.Email, "Error reading invoice list response body: "+err.Error())
 		return errors.New("Error reading invoice list response body: " + err.Error()), true
 	}
 
 	err = json.Unmarshal(body, &invoiceList)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error unmarshalling invoice list response body: "+err.Error())
+		logger.Error(t.Email, "Error unmarshalling invoice list response body: "+err.Error())
 		return errors.New("Error unmarshalling invoice list response body: " + err.Error()), true
 	}
 
@@ -582,7 +582,7 @@ func (t *Tracker) getInvoice(invoiceId string, i int) error {
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.adidas.%s/api/orders/invoice/%s", t.region, url.QueryEscape(invoiceId)), nil)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error creating getInvoice request: "+err.Error())
+		logger.Error(t.Email, "Error creating getInvoice request: "+err.Error())
 	}
 
 	req.Header = http.Header{
@@ -608,14 +608,14 @@ func (t *Tracker) getInvoice(invoiceId string, i int) error {
 
 	resp, err := t.client.Do(req)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error getting invoice: "+err.Error())
+		logger.Error(t.Email, "Error getting invoice: "+err.Error())
 		return errors.New("Error getting invoice: " + err.Error())
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Error("Adidas-Tracker", "Error getting invoice: "+resp.Status)
+		logger.Error(t.Email, "Error getting invoice: "+resp.Status)
 		return errors.New("Error getting invoice: " + resp.Status)
 	}
 
@@ -623,21 +623,21 @@ func (t *Tracker) getInvoice(invoiceId string, i int) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err = os.MkdirAll(dir, 0755)
 		if err != nil {
-			logger.Error("Adidas-Tracker", "Error creating directory: "+err.Error())
+			logger.Error(t.Email, "Error creating directory: "+err.Error())
 			return errors.New("Error creating directory: " + err.Error())
 		}
 	}
 
 	file, err := os.Create(fmt.Sprintf("%s/%s-(%d).pdf", dir, t.OrderId, i))
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error creating file: "+err.Error())
+		logger.Error(t.Email, "Error creating file: "+err.Error())
 		return errors.New("Error creating file: " + err.Error())
 	}
 	defer file.Close()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		logger.Error("Adidas-Tracker", "Error saving invoice: "+err.Error())
+		logger.Error(t.Email, "Error saving invoice: "+err.Error())
 		return errors.New("Error saving invoice: " + err.Error())
 	}
 
