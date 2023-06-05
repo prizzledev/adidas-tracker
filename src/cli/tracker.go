@@ -48,55 +48,55 @@ type Shipment struct {
 }
 
 type TrackingResponse struct {
-	AdjustedMerchandizeTotal int    `json:"adjustedMerchandizeTotal"`
-	MerchandizeTotal         int    `json:"merchandizeTotal"`
-	TotalAmount              int    `json:"totalAmount"`
-	TotalTax                 int    `json:"totalTax"`
-	IsCancellable            bool   `json:"isCancellable"`
-	IsReturnable             bool   `json:"isReturnable"`
-	IsExchangeable           bool   `json:"isExchangeable"`
-	DeliveryStatus           string `json:"deliveryStatus"`
-	Status                   string `json:"status"`
-	OrderTrackData           string `json:"orderTrackData"`
-	ID                       string `json:"id"`
-	Currency                 string `json:"currency"`
-	IsPaid                   bool   `json:"isPaid"`
-	OrderNo                  string `json:"orderNo"`
-	CreationDate             string `json:"creationDate"`
-	Type                     string `json:"type"`
+	AdjustedMerchandizeTotal float64 `json:"adjustedMerchandizeTotal"`
+	MerchandizeTotal         float64 `json:"merchandizeTotal"`
+	TotalAmount              float64 `json:"totalAmount"`
+	TotalTax                 float64 `json:"totalTax"`
+	IsCancellable            bool    `json:"isCancellable"`
+	IsReturnable             bool    `json:"isReturnable"`
+	IsExchangeable           bool    `json:"isExchangeable"`
+	DeliveryStatus           string  `json:"deliveryStatus"`
+	Status                   string  `json:"status"`
+	OrderTrackData           string  `json:"orderTrackData"`
+	ID                       string  `json:"id"`
+	Currency                 string  `json:"currency"`
+	IsPaid                   bool    `json:"isPaid"`
+	OrderNo                  string  `json:"orderNo"`
+	CreationDate             string  `json:"creationDate"`
+	Type                     string  `json:"type"`
 	ProductLineItems         []struct {
-		ID                              string `json:"id"`
-		LineKey                         string `json:"lineKey"`
-		LineItemPosition                int    `json:"lineItemPosition"`
-		ReturnableQuantity              int    `json:"returnableQuantity"`
-		ProductID                       string `json:"productId"`
-		ProductName                     string `json:"productName"`
-		ProductType                     string `json:"productType"`
-		Color                           string `json:"color"`
-		Size                            string `json:"size"`
-		LiteralSize                     string `json:"literalSize"`
-		ModelNumber                     string `json:"modelNumber"`
-		ArticleNumber                   string `json:"articleNumber"`
-		Status                          string `json:"status"`
-		StatusDate                      string `json:"statusDate"`
-		IsCancellable                   bool   `json:"isCancellable"`
-		Price                           int    `json:"price"`
-		AdjustedPrice                   int    `json:"adjustedPrice"`
-		AdjustedPriceAfterOrderDiscount int    `json:"adjustedPriceAfterOrderDiscount"`
-		IsGiftCard                      bool   `json:"isGiftCard"`
-		IsHype                          bool   `json:"isHype"`
-		IsFlash                         bool   `json:"isFlash"`
-		IsMTBR                          bool   `json:"isMTBR"`
-		IsMCBP                          bool   `json:"isMCBP"`
-		IsRecyclable                    bool   `json:"isRecyclable"`
-		IsReturnable                    bool   `json:"isReturnable"`
-		IsInline                        bool   `json:"isInline"`
-		IsPreOrder                      bool   `json:"isPreOrder"`
-		IsBackOrder                     bool   `json:"isBackOrder"`
-		IsKnownBackOrder                bool   `json:"isKnownBackOrder"`
-		Gender                          string `json:"gender"`
-		ExpectedShipmentDate            string `json:"expectedShipmentDate"`
-		ExpectedDeliveryDate            string `json:"expectedDeliveryDate"`
+		ID                              string  `json:"id"`
+		LineKey                         string  `json:"lineKey"`
+		LineItemPosition                float64 `json:"lineItemPosition"`
+		ReturnableQuantity              float64 `json:"returnableQuantity"`
+		ProductID                       string  `json:"productId"`
+		ProductName                     string  `json:"productName"`
+		ProductType                     string  `json:"productType"`
+		Color                           string  `json:"color"`
+		Size                            string  `json:"size"`
+		LiteralSize                     string  `json:"literalSize"`
+		ModelNumber                     string  `json:"modelNumber"`
+		ArticleNumber                   string  `json:"articleNumber"`
+		Status                          string  `json:"status"`
+		StatusDate                      string  `json:"statusDate"`
+		IsCancellable                   bool    `json:"isCancellable"`
+		Price                           float64 `json:"price"`
+		AdjustedPrice                   float64 `json:"adjustedPrice"`
+		AdjustedPriceAfterOrderDiscount float64 `json:"adjustedPriceAfterOrderDiscount"`
+		IsGiftCard                      bool    `json:"isGiftCard"`
+		IsHype                          bool    `json:"isHype"`
+		IsFlash                         bool    `json:"isFlash"`
+		IsMTBR                          bool    `json:"isMTBR"`
+		IsMCBP                          bool    `json:"isMCBP"`
+		IsRecyclable                    bool    `json:"isRecyclable"`
+		IsReturnable                    bool    `json:"isReturnable"`
+		IsInline                        bool    `json:"isInline"`
+		IsPreOrder                      bool    `json:"isPreOrder"`
+		IsBackOrder                     bool    `json:"isBackOrder"`
+		IsKnownBackOrder                bool    `json:"isKnownBackOrder"`
+		Gender                          string  `json:"gender"`
+		ExpectedShipmentDate            string  `json:"expectedShipmentDate"`
+		ExpectedDeliveryDate            string  `json:"expectedDeliveryDate"`
 		EstimatedDeliveryPeriod         struct {
 			From string `json:"from"`
 			To   string `json:"to"`
@@ -156,13 +156,13 @@ type TrackingResponse struct {
 			PostalCode   string `json:"postalCode"`
 		} `json:"shippingAddress"`
 		Prices struct {
-			ShippingTotal         int `json:"shippingTotal"`
-			AdjustedShippingTotal int `json:"adjustedShippingTotal"`
-			ShippingTotalTax      int `json:"shippingTotalTax"`
+			ShippingTotal         float64 `json:"shippingTotal"`
+			AdjustedShippingTotal float64 `json:"adjustedShippingTotal"`
+			ShippingTotalTax      float64 `json:"shippingTotalTax"`
 			ShipmentPrices        []struct {
-				Reference     string `json:"reference"`
-				AdjustedTotal int    `json:"adjustedTotal"`
-				Total         int    `json:"total"`
+				Reference     string  `json:"reference"`
+				AdjustedTotal float64 `json:"adjustedTotal"`
+				Total         float64 `json:"total"`
 			} `json:"shipmentPrices"`
 		} `json:"prices"`
 	} `json:"shipping"`
@@ -175,12 +175,12 @@ type TrackingResponse struct {
 }
 
 type InvoiceListResponse struct {
-	ID         string `json:"id"`
-	Type       string `json:"type"`
-	InvoicedOn string `json:"invoicedOn"`
-	OrderNo    string `json:"orderNo"`
-	Key        string `json:"key"`
-	Amount     int    `json:"amount"`
+	ID         string  `json:"id"`
+	Type       string  `json:"type"`
+	InvoicedOn string  `json:"invoicedOn"`
+	OrderNo    string  `json:"orderNo"`
+	Key        string  `json:"key"`
+	Amount     float64 `json:"amount"`
 }
 
 func (t *Tracker) Track() {
@@ -189,11 +189,15 @@ func (t *Tracker) Track() {
 	//parse the region from the order id (2nd and 3rd characters)
 	t.region = strings.ToLower(t.OrderId[1:3])
 
+	if strings.ToLower(t.region) == "d9" {
+		t.region = "com"
+	}
+
 	options := []tls.HttpClientOption{
 		tls.WithClientProfile(tls.Chrome_111),
 		tls.WithTimeoutMilliseconds(20000),
 		tls.WithCookieJar(tls.NewCookieJar()),
-		tls.WithCharlesProxy("localhost", "8889"),
+		//tls.WithCharlesProxy("localhost", "8889"),
 	}
 
 	if t.Proxy != "" {
