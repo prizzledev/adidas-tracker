@@ -249,7 +249,10 @@ func (t *Tracker) Track() {
 	if t.Result.Status == "COMPLETED" || t.Result.Status == "DELIVERED" && strings.ToLower(t.Invoice) == "true" {
 		logger.Info("Adidas-Tracker", "Getting invoice list")
 
-		err = t.getInvoiceList()
+		err, skip := t.getInvoiceList()
+		if skip {
+			return
+		}
 		if err != nil {
 			t.Error = err
 			return
@@ -498,7 +501,7 @@ func (t *Tracker) getTrackingData() error {
 	return nil
 }
 
-func (t *Tracker) getInvoiceList() error {
+func (t *Tracker) getInvoiceList() (error, bool) {
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.adidas.%s/api/orders/invoice/list/%s", t.region, url.QueryEscape(t.Result.InvoiceListID)), nil)
 	if err != nil {
@@ -541,7 +544,7 @@ func (t *Tracker) getInvoiceList() error {
 	resp, err := t.client.Do(req)
 	if err != nil {
 		logger.Error("Adidas-Tracker", "Error getting invoice list: "+err.Error())
-		return errors.New("Error getting invoice list: " + err.Error())
+		return errors.New("Error getting invoice list: " + err.Error()), true
 	}
 
 	defer resp.Body.Close()
@@ -549,10 +552,10 @@ func (t *Tracker) getInvoiceList() error {
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusBadRequest {
 			logger.Info("Adidas-Tracker", "No invoice list found, adidas is weird :/")
-			return errors.New("Error getting invoice list:  adidas is weird :/")
+			return nil, true
 		} else {
 			logger.Error("Adidas-Tracker", "Error getting invoice list: "+resp.Status)
-			return errors.New("Error getting invoice list: " + resp.Status)
+			return errors.New("Error getting invoice list: " + resp.Status), true
 		}
 	}
 
@@ -561,18 +564,18 @@ func (t *Tracker) getInvoiceList() error {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logger.Error("Adidas-Tracker", "Error reading invoice list response body: "+err.Error())
-		return errors.New("Error reading invoice list response body: " + err.Error())
+		return errors.New("Error reading invoice list response body: " + err.Error()), true
 	}
 
 	err = json.Unmarshal(body, &invoiceList)
 	if err != nil {
 		logger.Error("Adidas-Tracker", "Error unmarshalling invoice list response body: "+err.Error())
-		return errors.New("Error unmarshalling invoice list response body: " + err.Error())
+		return errors.New("Error unmarshalling invoice list response body: " + err.Error()), true
 	}
 
 	t.InvoiceList = invoiceList
 
-	return nil
+	return nil, false
 }
 
 func (t *Tracker) getInvoice(invoiceId string, i int) error {
