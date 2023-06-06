@@ -2,6 +2,7 @@ package cli
 
 import (
 	"AdidasTracker/src/pkg/logger"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +23,8 @@ type Tracker struct {
 	Email   string
 	Proxy   string
 	Invoice string
+
+	Writer *csv.Writer
 
 	client     tls.HttpClient
 	trackingId string
@@ -245,6 +248,14 @@ func (t *Tracker) Track() {
 	}
 
 	logger.Success(t.Email, "Tracking data retrieved")
+
+	err = t.Writer.Write([]string{t.Result.OrderNo, t.Result.CustomerEmail, t.Result.Status, t.Result.ProductLineItems[0].ProductName, t.Result.ProductLineItems[0].LiteralSize, t.Result.ProductLineItems[0].ArticleNumber, fmt.Sprintf("%s - %s", t.Result.ProductLineItems[0].EstimatedDeliveryPeriod.From, t.Result.ProductLineItems[0].EstimatedDeliveryPeriod.To), t.Result.Shipping.ShippingAddress.PostalCode, t.Result.Shipments[0].TrackingURL, t.Result.Shipments[0].TrackingNo, t.Result.Shipments[0].SCAC})
+	if err != nil {
+		logger.Error("CSV", fmt.Sprintf("Error writing order %s to trackedOrders.csv: %s", t.Result.OrderNo, err))
+	}
+	t.Writer.Flush()
+
+	logger.Info("CSV", "Should be printed")
 
 	if strings.ToLower(t.Invoice) == "true" {
 		logger.Info(t.Email, "Getting invoice list")

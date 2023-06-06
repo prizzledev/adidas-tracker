@@ -96,8 +96,30 @@ func main() {
 
 	trackedOrders := make([]Tracked, 0)
 
-	counter := 0
+	//creating the csv file
+	csvFilePath := filepath.Join(executablePath, "trackedOrders.csv")
 
+	file, err := os.Create(csvFilePath)
+	if err != nil {
+		logger.Error("CSV", fmt.Sprintf("Error creating trackedOrders.csv: %s", err))
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	writer.Flush()
+
+	// Write headers
+	err = writer.Write([]string{"OrderNumber", "Email", "Status", "Name", "Size", "SKU", "EstimatedDelivery", "Postcode", "TrackingURL", "TrackingNumber", "Carrier"})
+	if err != nil {
+		logger.Error("CSV", fmt.Sprintf("Error writing headers to trackedOrders.csv: %s", err))
+	}
+	writer.Flush()
+
+	if err := writer.Error(); err != nil {
+		logger.Error("CSV", fmt.Sprintf("Error while flushing and closing trackedOrders.csv: %s", err))
+	}
+
+	counter := 0
 	for _, order := range orders {
 		if counter >= len(proxies) {
 			counter = 0
@@ -110,6 +132,7 @@ func main() {
 			Email:   order.Email,
 			Proxy:   proxy,
 			Invoice: order.Invoice,
+			Writer:  writer,
 		}
 
 		tracker.Track()
@@ -131,34 +154,6 @@ func main() {
 			TrackingNumber:    tracker.Result.Shipments[0].TrackingNo,
 			Carrier:           tracker.Result.Shipments[0].SCAC,
 		})
-	}
-	csvFilePath := filepath.Join(executablePath, "trackedOrders.csv")
-
-	file, err := os.Create(csvFilePath)
-	if err != nil {
-		logger.Error("CSV", fmt.Sprintf("Error creating trackedOrders.csv: %s", err))
-	}
-
-	if err != nil {
-		logger.Error("CSV", fmt.Sprintf("Error creating trackedOrders.csv: %s", err))
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	// Write headers
-	err = writer.Write([]string{"OrderNumber", "Email", "Status", "Name", "Size", "SKU", "EstimatedDelivery", "TrackingURL", "TrackingNumber", "Carrier"})
-	if err != nil {
-		logger.Error("CSV", fmt.Sprintf("Error writing headers to trackedOrders.csv: %s", err))
-	}
-
-	// Write data
-	for _, order := range trackedOrders {
-		err := writer.Write([]string{order.OrderNumber, order.Email, order.Status, order.Name, order.Size, order.SKU, order.EstimatedDelivery, order.TrackingURL, order.TrackingNumber, order.Carrier})
-		if err != nil {
-			logger.Error("CSV", fmt.Sprintf("Error writing order %s to trackedOrders.csv: %s", order.OrderNumber, err))
-		}
 	}
 
 	logger.Info("CREDIT", "Made with ❤️  by @prizzle")
