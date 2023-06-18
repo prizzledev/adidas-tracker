@@ -198,6 +198,12 @@ func (t *Tracker) Track() {
 		t.region = "co.uk"
 	} else if strings.ToLower(t.region) == "my" {
 		t.region = "com.my"
+	} else if strings.ToLower(t.region) == "sg" {
+		t.region = "com.sg"
+	} else if strings.ToLower(t.region) == "hk" {
+		t.region = "com.hk"
+	} else if strings.ToLower(t.region) == "au" {
+		t.region = "com.au"
 	}
 
 	options := []tls.HttpClientOption{
