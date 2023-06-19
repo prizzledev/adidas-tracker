@@ -1,5 +1,5 @@
 # Adidas-Tracker
-###### made by [Prizzle](https://twitter.com/bypassedpx)
+###### made by [Prizzle](https://twitter.com/atcblocked)
 
 ## What is Adidas-Tracker?
 Adidas-Tracker is a tool that allows you to track your adidas orders and summarise them in a single csv file.
@@ -15,7 +15,7 @@ Yes, you can. Just make sure to credit me in any way. <3
 
 
 - https://prizzle.dev
-- https://twitter.com/bypassedpx
+- https://twitter.com/atcblocked
 - Prizzle#4655
 
 ## License
